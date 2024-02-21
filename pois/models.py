@@ -9,5 +9,8 @@ class PointOfInterest(models.Model):
     description = models.TextField(null=True, blank=True)
     ratings = ArrayField(models.IntegerField(), blank=True, null=True)
 
+    class Meta:
+        db_table = "points_of_interest"
+
     def __str__(self):
         return self.name
