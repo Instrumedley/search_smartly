@@ -9,6 +9,18 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
+import os
+
+# due to issues with GeoDjango not finding the GDal library, the below code is essential
+# Solution taken from https://stackoverflow.com/questions/49139044/geodjango-on-windows-could-not-find-the-gdal-library-oserror-winerror-12/49159195#49159195
+if os.name == 'nt':
+    import platform
+    OSGEO4W = r'C:\OSGeo4W'
+    assert os.path.isdir(OSGEO4W), "Directory does not exist: " + OSGEO4W
+    os.environ['OSGEO4W_ROOT'] = OSGEO4W
+    os.environ['GDAL_DATA'] = OSGEO4W + r"\share\gdal"
+    os.environ['PROJ_LIB'] = OSGEO4W + r"\share\proj"
+    os.environ['PATH'] = OSGEO4W + r"\bin;" + os.environ['PATH']
 
 from pathlib import Path
 
@@ -37,7 +49,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.gis'
+    'django.contrib.gis',
+    'pois'
 ]
 
 MIDDLEWARE = [
@@ -75,12 +88,14 @@ WSGI_APPLICATION = 'searchSmartly.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# only setting credentials here because it's an interview test, so to keep it simple
+# in a real work/production environment I'd use .env files
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'smartly',
-        'USER': 'root',
-        'PASSWORD': 'smartly',
+        'USER': 'postgres',
+        'PASSWORD': '1985',
         'HOST': 'localhost',
         'PORT': '5432',
     }
