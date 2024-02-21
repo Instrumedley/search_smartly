@@ -2,7 +2,7 @@ from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField
 
 class PointOfInterest(models.Model):
-    id = models.CharField(max_length=255, primary_key=True)
+    external_id = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     location = models.PointField()
     category = models.CharField(max_length=255)

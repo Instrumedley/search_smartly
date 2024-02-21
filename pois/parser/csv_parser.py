@@ -7,7 +7,7 @@ class CsvParser(BaseParser):
             reader = csv.DictReader(csvfile)
             for row in reader:
                 yield {
-                    'id': row['poi_id'],
+                    'external_id': row['poi_id'],
                     'name': row['poi_name'],
                     'category': row['poi_category'],
                     'latitude': float(row['poi_latitude']),

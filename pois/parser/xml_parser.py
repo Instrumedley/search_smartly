@@ -8,7 +8,7 @@ class XmlParser(BaseParser):
         for event, elem in context:
             if event == "end" and elem.tag == "DATA_RECORD":
                 yield {
-                    'id': elem.find('pid').text,
+                    'external_id': elem.find('pid').text,
                     'name': elem.find('pname').text,
                     'category': elem.find('pcategory').text,
                     'latitude': float(elem.find('platitude').text),

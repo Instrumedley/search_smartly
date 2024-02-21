@@ -22,7 +22,7 @@ class Command(BaseCommand):
                 for poi_data in parser.parse():
                     location = Point(float(poi_data['longitude']), float(poi_data['latitude']), srid=4326)  # Ensure to set SRID if needed
                     pois_to_create.append(PointOfInterest(
-                        id=poi_data['id'],
+                        external_id=poi_data['external_id'],
                         name=poi_data['name'],
                         category=poi_data['category'],
                         location=location,
