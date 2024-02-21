@@ -1,40 +1,48 @@
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from pois.models import PointOfInterest
+from django.contrib.gis.geos import Point
 from pois.parser import get_parser
-import os
 
 class Command(BaseCommand):
-    help = 'Imports Points of Interest from specified files'
+    help = 'Import Points of Interest from files'
+    chunk_size = 100  # Number of records to be processed at a time, to avoid memory issues
 
     def add_arguments(self, parser):
-        parser.add_argument('file_paths', nargs='+', type=str, help='The file paths to import data from')
+        parser.add_argument('files', nargs='+', type=str, help='The file paths to import data from')
 
     def handle(self, *args, **options):
-        for file_path in options['file_paths']:
-            if not os.path.exists(file_path):
-                self.stdout.write(self.style.ERROR(f'File {file_path} does not exist'))
-                continue
+        self.stdout.write("Starting to extract data. This process may take a few minutes depending on"
+                          "how large the files are \n", ending='')
+
+        for file_path in options['files']:
+            parser = get_parser(file_path)
+            pois_to_create = []
 
             try:
-                parser = get_parser(file_path)
-                pois = parser.parse()
-
-                for poi_data in pois:
-                    poi, created = PointOfInterest.objects.update_or_create(
+                for poi_data in parser.parse():
+                    location = Point(float(poi_data['longitude']), float(poi_data['latitude']), srid=4326)  # Ensure to set SRID if needed
+                    pois_to_create.append(PointOfInterest(
                         id=poi_data['id'],
-                        defaults={
-                            'name': poi_data['name'],
-                            'category': poi_data['category'],
-                            'location': f"POINT({poi_data['longitude']} {poi_data['latitude']})",
-                            'description': poi_data.get('description', ''),
-                            'ratings': poi_data['ratings'],
-                        }
-                    )
+                        name=poi_data['name'],
+                        category=poi_data['category'],
+                        location=location,
+                        ratings=poi_data['ratings']
+                    ))
+                    # Bulk insert when chunk size is reached
+                    if len(pois_to_create) >= self.chunk_size:
+                        PointOfInterest.objects.bulk_create(pois_to_create, ignore_conflicts=True)
+                        pois_to_create = []
+                        self.stdout.write(".", ending='')
+                        self.stdout.flush()
 
-                    action = 'Created' if created else 'Updated'
-                    self.stdout.write(self.style.SUCCESS(f"{action} {poi.name} with ID {poi.id}"))
+                # Insert any remaining PoIs
+                if pois_to_create:
+                    PointOfInterest.objects.bulk_create(pois_to_create, ignore_conflicts=True)
+                    self.stdout.write(".", ending='')
+                    self.stdout.flush()
 
             except Exception as e:
-                raise CommandError(f'Error importing {file_path}: {e}')
+                self.stdout.write(self.style.ERROR(f'Error processing file {file_path}: {e}'))
 
-            self.stdout.write(self.style.SUCCESS(f'Successfully imported data from {file_path}'))
+        self.stdout.write("\n")  # Move to a new line after finishing all files
+        self.stdout.write(self.style.SUCCESS('All records have been added successfully!'))
